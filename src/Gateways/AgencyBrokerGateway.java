@@ -22,8 +22,8 @@ public abstract class AgencyBrokerGateway {
     private HashMap<AgencyRequest, String> cach = new HashMap<>();
 
     public AgencyBrokerGateway(String chanel){
-        sender = new MessageSenderGateway("test5");
-        receiver = new MessageReceiverGateway(chanel);
+        sender = new MessageSenderGateway("agencyReplyChanel");
+        receiver = new MessageReceiverGateway("agencyRequestChanel");
         serializer = new AgencySerializer();
 
         receiver.setListener(new MessageListener() {

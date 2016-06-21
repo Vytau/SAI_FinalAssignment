@@ -22,8 +22,8 @@ public abstract class BrokerBookingGateway {
     private HashMap<String, ClientBookingRequest> cach = new HashMap<>();
 
     public BrokerBookingGateway(){
-        sender = new MessageSenderGateway("test2");
-        receiver = new MessageReceiverGateway("test");
+        sender = new MessageSenderGateway("bookingRequestChanel");
+        receiver = new MessageReceiverGateway("bookingReplyChanel");
         serializer = new BookingSerializer();
 
         receiver.setListener(new MessageListener() {
