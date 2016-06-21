@@ -14,7 +14,7 @@ class JListLine {
 		this.setBookingRequest(bookingRequest);
 	}
 
-	public ClientBookingRequest getLoanRequest() {
+	public ClientBookingRequest getBookingRequest() {
 		return bookingRequest;
 	}
 

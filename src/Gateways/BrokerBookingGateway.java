@@ -35,7 +35,6 @@ public abstract class BrokerBookingGateway {
                     ClientBookingRequest bookingRequest = serializer.bookingRequestFromString(msgText);
                     cach.put(msg.getJMSMessageID(), bookingRequest);
                     onBookingRequest(bookingRequest);
-                    System.out.println(msg.getJMSMessageID());
                 } catch (JMSException e) {
                     e.printStackTrace();
                 }

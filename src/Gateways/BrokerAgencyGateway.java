@@ -32,7 +32,9 @@ public abstract class BrokerAgencyGateway {
                 String msgText = null;
                 try {
                     msgText = ((TextMessage) msg).getText();
-
+                    AgencyReply agencyReply = serializer.agencyReplyFromString(msgText);
+                    AgencyRequest agencyRequest = cach.get(msg.getJMSCorrelationID());
+                    onAgencyReply(agencyReply, agencyRequest);
                 } catch (JMSException e) {
                     e.printStackTrace();
                 }
@@ -40,16 +42,16 @@ public abstract class BrokerAgencyGateway {
         });
     }
 
-    public void sendAgencyRquest(AgencyRequest request){
+    public void sendAgencyRequest(AgencyRequest request){
         try {
             String serMsg = serializer.agencyRequestToString(request);
             Message msg = sender.createMessage(serMsg);
             sender.sendMessage(msg);
-            cach.put(msg.getJMSCorrelationID(), request);
+            cach.put(msg.getJMSMessageID(), request);
         } catch (JMSException e) {
             e.printStackTrace();
         }
     }
 
-    public abstract void onAgencyReply(AgencyReply reply);
+    public abstract void onAgencyReply(AgencyReply reply, AgencyRequest request);
 }

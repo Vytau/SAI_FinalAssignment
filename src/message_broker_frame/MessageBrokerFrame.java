@@ -5,17 +5,10 @@ import Gateways.BrokerBookingGateway;
 import booking.model.agency.AgencyReply;
 import booking.model.agency.AgencyRequest;
 import booking.model.client.ClientBookingRequest;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
-import javax.jms.*;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.Properties;
 
 public class MessageBrokerFrame extends JFrame {
 
@@ -30,21 +23,6 @@ public class MessageBrokerFrame extends JFrame {
 
     private BrokerBookingGateway bbGateway;
     private BrokerAgencyGateway baGateway;
-
-
-    private Connection connectionToClient;
-    private Session sessionToClient;
-    private Destination receiveDestinationToClient;
-    private MessageConsumer consumerToClient;
-    private Destination sendDestinationToClient;
-    private MessageProducer producerToClient;
-
-    private Connection connectionToBank;
-    private Session sessionToBank;
-    private Destination receiveDestinationToBank;
-    private MessageConsumer consumerToBank;
-    private Destination sendDestinationToBank;
-    private MessageProducer producerToBank;
 
     /**
      * Create the frame.
@@ -77,18 +55,19 @@ public class MessageBrokerFrame extends JFrame {
 
         bbGateway = new BrokerBookingGateway() {
             @Override
-            public void onBookingRequest(ClientBookingRequest request) {
-                add(request);
+            public void onBookingRequest(ClientBookingRequest bookingRequest) {
+                add(bookingRequest);
                 double distant = 0;
-                AgencyRequest tempRequest = new AgencyRequest(request.getDestinationAirport(), request.getOriginAirport(), distant);
-                baGateway.sendAgencyRquest(tempRequest);
+                AgencyRequest agencyRequest = new AgencyRequest(bookingRequest.getDestinationAirport(), bookingRequest.getOriginAirport(), distant);
+                add(bookingRequest, agencyRequest);
+                baGateway.sendAgencyRequest(agencyRequest);
             }
         };
 
         baGateway = new BrokerAgencyGateway() {
             @Override
-            public void onAgencyReply(AgencyReply reply) {
-
+            public void onAgencyReply(AgencyReply reply, AgencyRequest request) {
+                add(request, reply);
             }
         };
     }
@@ -106,227 +85,46 @@ public class MessageBrokerFrame extends JFrame {
         });
     }
 
-//    private JListLine getRequestReply(LoanRequest request) {
-//
-//        for (int i = 0; i < listModel.getSize(); i++) {
-//            JListLine rr = listModel.get(i);
-//            if (rr.getLoanRequest() == request) {
-//                return rr;
-//            }
-//        }
-//        return null;
-//    }
-//
+    private JListLine getRequestReply(AgencyRequest request) {
+
+        for (int i = 0; i < listModel.getSize(); i++) {
+            JListLine rr = listModel.get(i);
+            if (rr.getAgencyRequest() == request) {
+                return rr;
+            }
+        }
+        return null;
+    }
+
+    private JListLine getRequestReply(ClientBookingRequest request) {
+
+        for (int i = 0; i < listModel.getSize(); i++) {
+            JListLine rr = listModel.get(i);
+            if (rr.getBookingRequest() == request) {
+                return rr;
+            }
+        }
+        return null;
+    }
+
     public void add(ClientBookingRequest bookingRequest) {
         listModel.addElement(new JListLine(bookingRequest));
     }
-//
-//
-//    public void add(LoanRequest loanRequest, BankInterestRequest bankRequest) {
-//        JListLine rr = getRequestReply(loanRequest);
-//        if (rr != null && bankRequest != null) {
-//            rr.setBankRequest(bankRequest);
-//            list.repaint();
-//        }
-//    }
-//
-//    public void add(LoanRequest loanRequest, BankInterestReply bankReply) {
-//        JListLine rr = getRequestReply(loanRequest);
-//        if (rr != null && bankReply != null) {
-//            rr.setBankReply(bankReply);
-//            list.repaint();
-//        }
-//    }
 
-    private void subscribeToClient() {
-        try {
-            Properties props = new Properties();
-            props.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-                    "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
 
-            props.put(("queue.test"), "test");
-
-            Context jndiContext = new InitialContext(props);
-            ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup("ConnectionFactory");
-            connectionToClient = connectionFactory.createConnection();
-            sessionToClient = connectionToClient
-                    .createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            // connect to the receiver destination
-            receiveDestinationToClient = (Destination) jndiContext.lookup("test");
-            consumerToClient = sessionToClient.createConsumer(receiveDestinationToClient);
-
-            connectionToClient.start(); // this is needed to start receiving messages
-
-        } catch (NamingException | JMSException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            consumerToClient.setMessageListener(new MessageListener() {
-
-                @Override
-                public void onMessage(Message msg) {
-                    try {
-                        String msgText = ((TextMessage) msg).getText();
-                        System.out.println(msgText);
-
-                        //Deserialize
-                        Gson gson = new GsonBuilder().create();
-                        ClientBookingRequest loanRequest = gson.fromJson(msgText, ClientBookingRequest.class);
-                        add(loanRequest);
-//
-//                        //add to list model and cash data
-//                        add(loanRequest);
-//                        cash.put(msg.getJMSMessageID(), loanRequest);
-//
-//                        //create bankRequest and send
-//                        BankInterestRequest bankInterestRequest = new BankInterestRequest(loanRequest.getAmount(),loanRequest.getTime());
-//                        SendMessageToBank(bankInterestRequest, msg.getJMSMessageID());
-                    } catch (JMSException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-
-        } catch (JMSException e) {
-            e.printStackTrace();
+    public void add(ClientBookingRequest bookingRequest, AgencyRequest agencyRequest) {
+        JListLine rr = getRequestReply(bookingRequest);
+        if (rr != null && agencyRequest != null) {
+            rr.setAgencyRequest(agencyRequest);
+            list.repaint();
         }
     }
 
-//    private void connectToClient() {
-//        try {
-//            Properties props = new Properties();
-//            props.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-//                    "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-//            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
-//
-//            props.put(("queue." + Constants.replyLoanClientChanel), Constants.replyLoanClientChanel);
-//
-//            Context jndiContext = new InitialContext(props);
-//            ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup("ConnectionFactory");
-//            connectionToClient = connectionFactory.createConnection();
-//            sessionToClient = connectionToClient.createSession(false, Session.AUTO_ACKNOWLEDGE);
-//
-//            // connect to the sender destination
-//            sendDestinationToClient = (Destination) jndiContext.lookup(Constants.replyLoanClientChanel);
-//            producerToClient = sessionToClient.createProducer(sendDestinationToClient);
-//        } catch (NamingException e) {
-//            e.printStackTrace();
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-//    private void subscribeToBank() {
-//        try {
-//            Properties props = new Properties();
-//            props.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-//                    "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-//            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
-//
-//            props.put(("queue." + Constants.replyLoanBankChanel), Constants.replyLoanBankChanel);
-//
-//            Context jndiContext = new InitialContext(props);
-//            ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup("ConnectionFactory");
-//            connectionToBank = connectionFactory.createConnection();
-//            sessionToBank = connectionToBank.createSession(false, Session.AUTO_ACKNOWLEDGE);
-//
-//            // connect to the receiver destination
-//            receiveDestinationToBank = (Destination) jndiContext.lookup(Constants.replyLoanBankChanel);
-//            consumerToBank = sessionToBank.createConsumer(receiveDestinationToBank);
-//
-//            connectionToBank.start(); // this is needed to start receiving messages
-//
-//        } catch (NamingException | JMSException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            consumerToBank.setMessageListener(new MessageListener() {
-//
-//                @Override
-//                public void onMessage(Message msg) {
-//                    try {
-//                        String msgText = ((TextMessage) msg).getText();
-//                        //Deserialize
-//                        Gson gson = new GsonBuilder().create();
-//                        BankInterestReply bankReply = gson.fromJson(msgText, BankInterestReply.class);
-//
-//                        //Match reply with the right request
-//                        LoanRequest tempRequest = cash.get(msg.getJMSCorrelationID());
-//                        add(tempRequest, bankReply);
-//
-//                        //make loan reply and send it with correlation id
-//                        LoanReply loanReply = new LoanReply(bankReply.getInterest(),bankReply.getQuoteId());
-//                        SendMessageToClient(loanReply, msg.getJMSCorrelationID());
-//                    } catch (JMSException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            });
-//
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private void connectToBank() {
-//        try {
-//            Properties props = new Properties();
-//            props.setProperty(Context.INITIAL_CONTEXT_FACTORY,
-//                    "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
-//            props.setProperty(Context.PROVIDER_URL, "tcp://localhost:61616");
-//
-//            props.put(("queue." + Constants.requestLoanBankChanel), Constants.requestLoanBankChanel);
-//
-//            Context jndiContext = new InitialContext(props);
-//            ConnectionFactory connectionFactory = (ConnectionFactory) jndiContext.lookup("ConnectionFactory");
-//            connectionToBank = connectionFactory.createConnection();
-//            sessionToBank = connectionToBank.createSession(false, Session.AUTO_ACKNOWLEDGE);
-//
-//            // connect to the sender destination
-//            sendDestinationToBank = (Destination) jndiContext.lookup(Constants.requestLoanBankChanel);
-//            producerToBank = sessionToBank.createProducer(sendDestinationToBank);
-//        } catch (NamingException e) {
-//            e.printStackTrace();
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private void SendMessageToBank(BankInterestRequest bankInterestRequest, String msgID) {
-//        try {
-//            // Serializing
-//            Gson gson = new GsonBuilder().create();
-//            String serBankRequest = gson.toJson(bankInterestRequest);
-//
-//            // create a text message
-//            Message msg = sessionToBank.createTextMessage(serBankRequest);
-//            msg.setJMSCorrelationID(msgID);
-//
-//            // send the message
-//            producerToBank.send(msg);
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private void SendMessageToClient(LoanReply loanReply, String msgID){
-//        try{
-//            // Serializing
-//            Gson gson = new GsonBuilder().create();
-//            String serLoanReply = gson.toJson(loanReply);
-//
-//            // create a text message
-//            Message msg = sessionToClient.createTextMessage(serLoanReply);
-//            msg.setJMSCorrelationID(msgID);
-//
-//            // send the message
-//            producerToClient.send(msg);
-//        } catch (JMSException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    public void add(AgencyRequest agencyRequest, AgencyReply agencyReply) {
+        JListLine rr = getRequestReply(agencyRequest);
+        if (rr != null && agencyReply != null) {
+            rr.setAgencyReply(agencyReply);
+            list.repaint();
+        }
+    }
 }
