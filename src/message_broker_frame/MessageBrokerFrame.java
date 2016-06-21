@@ -4,6 +4,7 @@ import Gateways.BrokerAgencyGateway;
 import Gateways.BrokerBookingGateway;
 import booking.model.agency.AgencyReply;
 import booking.model.agency.AgencyRequest;
+import booking.model.client.ClientBookingReply;
 import booking.model.client.ClientBookingRequest;
 
 import javax.swing.*;
@@ -68,6 +69,9 @@ public class MessageBrokerFrame extends JFrame {
             @Override
             public void onAgencyReply(AgencyReply reply, AgencyRequest request) {
                 add(request, reply);
+                ClientBookingReply bookingReply = new ClientBookingReply(reply.getNameAgency(), reply.getTotalPrice());
+                ClientBookingRequest bookingRequest = getRequestReply(request).getBookingRequest();
+                bbGateway.sendReply(bookingReply, bookingRequest);
             }
         };
     }

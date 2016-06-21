@@ -7,6 +7,7 @@ package booking_client_frame;
 
 import Gateways.BookingBrokerGateway;
 import booking.model.client.Address;
+import booking.model.client.ClientBookingReply;
 import booking.model.client.ClientBookingRequest;
 
 import javax.swing.*;
@@ -19,7 +20,7 @@ public class BookingClientFrame extends javax.swing.JFrame {
 
     private DefaultListModel<ClientListLine> listModel = new DefaultListModel<>();
 
-    private BookingBrokerGateway bGateway = new BookingBrokerGateway();
+    private BookingBrokerGateway bGateway;
 
     /**
      * Creates new form NewJFrame
@@ -27,6 +28,14 @@ public class BookingClientFrame extends javax.swing.JFrame {
     public BookingClientFrame() {
         initComponents();
         setTransfer(this.jcbTransfer.isSelected());
+
+       bGateway = new BookingBrokerGateway() {
+           @Override
+           public void onBookingReply(ClientBookingReply reply, ClientBookingRequest request) {
+               getRequestReply(request).setReply(reply);
+               jList1.repaint();
+           }
+       };
     }
 
     private ClientListLine getRequestReply(ClientBookingRequest request) {
@@ -37,7 +46,6 @@ public class BookingClientFrame extends javax.swing.JFrame {
                 return rr;
             }
         }
-
         return null;
     }
 

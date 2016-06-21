@@ -19,7 +19,7 @@ public abstract class BrokerBookingGateway {
     MessageSenderGateway sender;
     MessageReceiverGateway receiver;
     BookingSerializer serializer;
-    private HashMap<String, ClientBookingRequest> cach = new HashMap<>();
+    private HashMap<ClientBookingRequest, String> cach = new HashMap<>();
 
     public BrokerBookingGateway(){
         sender = new MessageSenderGateway("bookingRequestChanel");
@@ -33,7 +33,7 @@ public abstract class BrokerBookingGateway {
                 try {
                     msgText = ((TextMessage) msg).getText();
                     ClientBookingRequest bookingRequest = serializer.bookingRequestFromString(msgText);
-                    cach.put(msg.getJMSMessageID(), bookingRequest);
+                    cach.put(bookingRequest, msg.getJMSMessageID());
                     onBookingRequest(bookingRequest);
                 } catch (JMSException e) {
                     e.printStackTrace();
@@ -42,8 +42,15 @@ public abstract class BrokerBookingGateway {
         });
     }
 
-    public void sendReply(ClientBookingReply reply){
-
+    public void sendReply(ClientBookingReply reply, ClientBookingRequest request){
+        try {
+            String serMsg = serializer.bookingReplyToString(reply);
+            Message msg = sender.createMessage(serMsg);
+            msg.setJMSCorrelationID(cach.get(request));
+            sender.sendMessage(msg);
+        } catch (JMSException e) {
+            e.printStackTrace();
+        }
     }
 
     public abstract void onBookingRequest(ClientBookingRequest request);
