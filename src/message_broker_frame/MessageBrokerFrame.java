@@ -6,10 +6,21 @@ import booking.model.agency.AgencyReply;
 import booking.model.agency.AgencyRequest;
 import booking.model.client.ClientBookingReply;
 import booking.model.client.ClientBookingRequest;
+import com.google.gson.*;
+import com.google.maps.DistanceMatrixApi;
+import com.google.maps.model.DistanceMatrix;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.util.Map;
 
 public class MessageBrokerFrame extends JFrame {
 
@@ -58,7 +69,7 @@ public class MessageBrokerFrame extends JFrame {
             @Override
             public void onBookingRequest(ClientBookingRequest bookingRequest) {
                 add(bookingRequest);
-                double distant = 0;
+                double distant = getDistanceFromGoogleAPI(bookingRequest);
                 AgencyRequest agencyRequest = new AgencyRequest(bookingRequest.getDestinationAirport(), bookingRequest.getOriginAirport(), distant);
                 add(bookingRequest, agencyRequest);
                 baGateway.sendAgencyRequest(agencyRequest);
@@ -130,5 +141,51 @@ public class MessageBrokerFrame extends JFrame {
             rr.setAgencyReply(agencyReply);
             list.repaint();
         }
+    }
+
+    private double getDistanceFromGoogleAPI(ClientBookingRequest bookingRequest){
+        System.out.println(bookingRequest.getTransferToAddress() + " and " +bookingRequest.getDestinationAirport());
+
+        try {
+
+            URL url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json?origins=Heathrow+Airport&destinations=30+Portman+Square+London");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            if (conn.getResponseCode() != 200) {
+                throw new RuntimeException("Failed : HTTP error code : "
+                        + conn.getResponseCode());
+            }
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(
+                    (conn.getInputStream())));
+
+            JsonParser jsonParser = new JsonParser();
+            JsonObject jsonObject = (JsonObject)jsonParser.parse(br);
+
+//            JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
+//            JsonElement arr = jsonArray.get(0);
+
+            System.out.println(jsonObject);
+
+
+//            System.out.println(br);
+//            Gson gson = new Gson();
+//            DistanceMatrix m = gson.fromJson(jsonObject, DistanceMatrix.class);
+//
+//            System.out.println(m.rows[0].elements[0].distance);
+
+            conn.disconnect();
+
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
     }
 }
