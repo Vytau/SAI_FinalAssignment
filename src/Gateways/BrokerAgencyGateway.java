@@ -17,12 +17,16 @@ import java.util.HashMap;
  */
 public abstract class BrokerAgencyGateway {
     MessageSenderGateway sender;
+    MessageSenderGateway sender1;
+    MessageSenderGateway sender2;
     MessageReceiverGateway receiver;
     AgencySerializer serializer;
     private HashMap<String, AgencyRequest> cach = new HashMap<>();
 
     public BrokerAgencyGateway(){
-        sender = new MessageSenderGateway("agencyRequestChanel");
+        sender = new MessageSenderGateway("bookFastQueue");
+        sender1 = new MessageSenderGateway("bookCheapQueue");
+        sender2 = new MessageSenderGateway("bookGoodServiceQueue");
         receiver = new MessageReceiverGateway("agencyReplyChanel");
         serializer = new AgencySerializer();
 
@@ -45,9 +49,18 @@ public abstract class BrokerAgencyGateway {
     public void sendAgencyRequest(AgencyRequest request){
         try {
             String serMsg = serializer.agencyRequestToString(request);
+
             Message msg = sender.createMessage(serMsg);
             sender.sendMessage(msg);
             cach.put(msg.getJMSMessageID(), request);
+
+            Message msg1 = sender1.createMessage(serMsg);
+            sender1.sendMessage(msg1);
+            cach.put(msg1.getJMSMessageID(), request);
+
+            Message msg2 = sender2.createMessage(serMsg);
+            sender2.sendMessage(msg2);
+            cach.put(msg2.getJMSMessageID(), request);
         } catch (JMSException e) {
             e.printStackTrace();
         }

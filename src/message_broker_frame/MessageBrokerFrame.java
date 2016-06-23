@@ -31,7 +31,6 @@ public class MessageBrokerFrame extends JFrame {
     private JPanel contentPane;
     private DefaultListModel<JListLine> listModel = new DefaultListModel<JListLine>();
     private JList<JListLine> list;
-    //private HashMap<String, LoanRequest> cash = new HashMap<String, LoanRequest>();
 
     private BrokerBookingGateway bbGateway;
     private BrokerAgencyGateway baGateway;
@@ -183,6 +182,7 @@ public class MessageBrokerFrame extends JFrame {
 
             if (jsonElement != null) {
                 result = jsonElement.getAsInt();
+                result/= 1000;
             }
 
             conn.disconnect();

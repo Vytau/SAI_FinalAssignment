@@ -23,7 +23,7 @@ public abstract class AgencyBrokerGateway {
 
     public AgencyBrokerGateway(String chanel){
         sender = new MessageSenderGateway("agencyReplyChanel");
-        receiver = new MessageReceiverGateway("agencyRequestChanel");
+        receiver = new MessageReceiverGateway(chanel);
         serializer = new AgencySerializer();
 
         receiver.setListener(new MessageListener() {
