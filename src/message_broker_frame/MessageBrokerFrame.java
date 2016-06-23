@@ -69,7 +69,10 @@ public class MessageBrokerFrame extends JFrame {
             @Override
             public void onBookingRequest(ClientBookingRequest bookingRequest) {
                 add(bookingRequest);
-                double distant = getDistanceFromGoogleAPI(bookingRequest);
+                double distant = 0;
+                if (bookingRequest.getTransferToAddress() != null) {
+                    distant = getDistanceFromGoogleAPI(bookingRequest);
+                }
                 AgencyRequest agencyRequest = new AgencyRequest(bookingRequest.getDestinationAirport(), bookingRequest.getOriginAirport(), distant);
                 add(bookingRequest, agencyRequest);
                 baGateway.sendAgencyRequest(agencyRequest);
@@ -143,11 +146,13 @@ public class MessageBrokerFrame extends JFrame {
         }
     }
 
-    private double getDistanceFromGoogleAPI(ClientBookingRequest bookingRequest){
-
-        String getRequestUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=" + bookingRequest.getDestinationAirport() +"+Airport&destinations="
-                +bookingRequest.getTransferToAddress().getNumber()+"+"+removeSpaces(bookingRequest.getTransferToAddress().getStreet())+"+"+removeSpaces(bookingRequest.getTransferToAddress().getCity());
-        System.out.println(getRequestUrl);
+    private double getDistanceFromGoogleAPI(ClientBookingRequest bookingRequest) {
+        double result = 0;
+        String getRequestUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?origins="
+                + bookingRequest.getDestinationAirport() + "+Airport&destinations="
+                + bookingRequest.getTransferToAddress().getNumber() + "+"
+                + removeSpaces(bookingRequest.getTransferToAddress().getStreet()) + "+"
+                + removeSpaces(bookingRequest.getTransferToAddress().getCity());
         try {
 
             URL url = new URL(getRequestUrl);
@@ -163,49 +168,22 @@ public class MessageBrokerFrame extends JFrame {
             BufferedReader br = new BufferedReader(new InputStreamReader(
                     (conn.getInputStream())));
 
-//            JsonParser jsonParser = new JsonParser();
-//            JsonObject jsonObject = (JsonObject)jsonParser.parse(br);
-//
-//            JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
-//
-//            JsonElement jsonElement = jsonArray.get(0);
-//
-//            System.out.println(jsonElement);
-
             JsonElement jsonElement = new JsonParser().parse(br);
             JsonObject jsonObject = jsonElement.getAsJsonObject();
 
             JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
-
             jsonElement = jsonArray.getAsJsonArray().get(0);
+            jsonObject = jsonElement.getAsJsonObject();
 
-            System.out.println(jsonElement);
+            jsonArray = jsonObject.getAsJsonArray("elements");
+            jsonElement = jsonArray.getAsJsonArray().get(0);
+            jsonObject = jsonElement.getAsJsonObject();
 
-//            JsonParser jsonParser = new JsonParser();
-//            JSONObject jsonRespRouteDistance = (JsonObject)jsonParser.parse(br)
-//                    .getAsJsonArray("rows")
-//                    .getJSONObject(0)
-//                    .getJSONArray ("elements")
-//                    .getJSONObject(0)
-//                    .getJSONObject("distance");
-//
-//            String distance = jsonRespRouteDistance.get("text").toString();
-//            System.out.println(distance);
-/*
-* For distance, below is only partial solution as the
-* output to string destination_addr will contain square brackets [] and double codes ""
-* Eg. [ "1600 Pennsylvania Avenue, Hagerstown, MD 21742, USA" ]
-*
-*/
-//            String destination_addr = new JsonObject(br)
-//                    .get("destination_addresses")
-//                    .toString();
+            jsonElement = jsonObject.getAsJsonObject("distance").get("value");
 
-            //System.out.println(br);
-//            Gson gson = new Gson();
-//            DistanceMatrix m = gson.fromJson(jsonObject, DistanceMatrix.class);
-//
-//            System.out.println(m.rows[0].elements[0].distance);
+            if (jsonElement != null) {
+                result = jsonElement.getAsInt();
+            }
 
             conn.disconnect();
 
@@ -217,10 +195,10 @@ public class MessageBrokerFrame extends JFrame {
             e.printStackTrace();
         }
 
-        return 0;
+        return result;
     }
 
-    private String removeSpaces(String original){
+    private String removeSpaces(String original) {
         return original.replaceAll("\\s+", "+");
     }
 }
