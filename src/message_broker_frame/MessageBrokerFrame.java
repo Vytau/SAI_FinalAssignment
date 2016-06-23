@@ -174,11 +174,32 @@ public class MessageBrokerFrame extends JFrame {
 
             JsonElement jsonElement = new JsonParser().parse(br);
             JsonObject jsonObject = jsonElement.getAsJsonObject();
+
             JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
 
-            jsonObject = jsonArray.get(0).getAsJsonObject();
+            jsonElement = jsonArray.getAsJsonArray().get(0);
 
-            System.out.println(jsonArray.get(0));
+            System.out.println(jsonElement);
+
+//            JsonParser jsonParser = new JsonParser();
+//            JSONObject jsonRespRouteDistance = (JsonObject)jsonParser.parse(br)
+//                    .getAsJsonArray("rows")
+//                    .getJSONObject(0)
+//                    .getJSONArray ("elements")
+//                    .getJSONObject(0)
+//                    .getJSONObject("distance");
+//
+//            String distance = jsonRespRouteDistance.get("text").toString();
+//            System.out.println(distance);
+/*
+* For distance, below is only partial solution as the
+* output to string destination_addr will contain square brackets [] and double codes ""
+* Eg. [ "1600 Pennsylvania Avenue, Hagerstown, MD 21742, USA" ]
+*
+*/
+//            String destination_addr = new JsonObject(br)
+//                    .get("destination_addresses")
+//                    .toString();
 
             //System.out.println(br);
 //            Gson gson = new Gson();
