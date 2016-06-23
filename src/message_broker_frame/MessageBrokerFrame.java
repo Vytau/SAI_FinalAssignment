@@ -6,9 +6,10 @@ import booking.model.agency.AgencyReply;
 import booking.model.agency.AgencyRequest;
 import booking.model.client.ClientBookingReply;
 import booking.model.client.ClientBookingRequest;
-import com.google.gson.*;
-import com.google.maps.DistanceMatrixApi;
-import com.google.maps.model.DistanceMatrix;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -20,7 +21,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.util.Map;
 
 public class MessageBrokerFrame extends JFrame {
 
@@ -144,11 +144,13 @@ public class MessageBrokerFrame extends JFrame {
     }
 
     private double getDistanceFromGoogleAPI(ClientBookingRequest bookingRequest){
-        System.out.println(bookingRequest.getTransferToAddress() + " and " +bookingRequest.getDestinationAirport());
 
+        String getRequestUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=" + bookingRequest.getDestinationAirport() +"+Airport&destinations="
+                +bookingRequest.getTransferToAddress().getNumber()+"+"+removeSpaces(bookingRequest.getTransferToAddress().getStreet())+"+"+removeSpaces(bookingRequest.getTransferToAddress().getCity());
+        System.out.println(getRequestUrl);
         try {
 
-            URL url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json?origins=Heathrow+Airport&destinations=30+Portman+Square+London");
+            URL url = new URL(getRequestUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
@@ -161,16 +163,24 @@ public class MessageBrokerFrame extends JFrame {
             BufferedReader br = new BufferedReader(new InputStreamReader(
                     (conn.getInputStream())));
 
-            JsonParser jsonParser = new JsonParser();
-            JsonObject jsonObject = (JsonObject)jsonParser.parse(br);
-
+//            JsonParser jsonParser = new JsonParser();
+//            JsonObject jsonObject = (JsonObject)jsonParser.parse(br);
+//
 //            JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
-//            JsonElement arr = jsonArray.get(0);
+//
+//            JsonElement jsonElement = jsonArray.get(0);
+//
+//            System.out.println(jsonElement);
 
-            System.out.println(jsonObject);
+            JsonElement jsonElement = new JsonParser().parse(br);
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            JsonArray jsonArray = jsonObject.getAsJsonArray("rows");
 
+            jsonObject = jsonArray.get(0).getAsJsonObject();
 
-//            System.out.println(br);
+            System.out.println(jsonArray.get(0));
+
+            //System.out.println(br);
 //            Gson gson = new Gson();
 //            DistanceMatrix m = gson.fromJson(jsonObject, DistanceMatrix.class);
 //
@@ -187,5 +197,9 @@ public class MessageBrokerFrame extends JFrame {
         }
 
         return 0;
+    }
+
+    private String removeSpaces(String original){
+        return original.replaceAll("\\s+", "+");
     }
 }
